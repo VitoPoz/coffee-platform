@@ -37,7 +37,7 @@
 ## 🚀 Установка и запуск
 
 ### 1. Клонируй репозиторий
-```bash
+
 git clone https://github.com/VitoPoz/coffee-platform.git
 cd coffee-platform
 
