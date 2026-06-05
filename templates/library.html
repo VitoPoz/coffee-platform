@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📖 Библиотека стандартов</h2>
+        {% if session.is_admin %}
+        <a href="/admin/library" class="btn btn-primary">Управление библиотекой</a>
+        {% endif %}
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5 class="card-title">🔍 Поиск по библиотеке</h5>
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Найти стандарт..." disabled>
+                        <button class="btn btn-primary" type="button" disabled>Найти</button>
+                    </div>
+                    <small class="text-muted">Функция поиска скоро будет доступна</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Категории -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h4>Категории</h4>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <a href="#" class="btn btn-outline-primary active">Все</a>
+                {% for category in categories %}
+                <a href="#" class="btn btn-outline-secondary" disabled>{{ category }}</a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Список стандартов -->
+    <div class="row">
+        {% for standard in standards %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="badge bg-info">{{ standard.category }}</span>
+                    {% if standard.file_url %}
+                    <span class="badge bg-success">📎 Файл прикреплен</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ standard.title }}</h5>
+                    <p class="card-text">
+                        {{ standard.content[:150] if standard.content else 'Описание отсутствует' }}...
+                    </p>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        Добавлен: {{ standard.created_at.strftime('%d.%m.%Y') }}
+                    </small>
+                    <button class="btn btn-sm btn-outline-primary float-end" disabled>
+                        Открыть
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-md-12">
+            <div class="alert alert-info">
+                <h5>📚 Библиотека пока пуста</h5>
+                <p>Администратор скоро добавит стандарты и инструкции для работы.</p>
+                {% if session.is_admin %}
+                <a href="/admin/library/new" class="btn btn-primary">Добавить первый стандарт</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Информация -->
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5>📌 Как пользоваться библиотекой?</h5>
+            <ul>
+                <li>Ищите стандарты по категориям</li>
+                <li>Используйте стандарты как справочник при работе</li>
+                <li>Следите за обновлениями — администратор добавляет новые материалы</li>
+                <li>При возникновении вопросов обращайтесь к руководителю</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

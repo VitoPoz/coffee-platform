@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin">Админ-панель</a></li>
+            <li class="breadcrumb-item"><a href="/admin/courses">Курсы</a></li>
+            <li class="breadcrumb-item active">Материалы: {{ course.title }}</li>
+        </ol>
+    </nav>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📄 Материалы курса: {{ course.title }}</h2>
+        <div>
+            <a href="/admin/course/{{ course.id }}/edit" class="btn btn-secondary me-2">
+                ← Назад к курсу
+            </a>
+            <a href="/admin/material/new/{{ course.id }}" class="btn btn-success">
+                ➕ Добавить материал
+            </a>
+        </div>
+    </div>
+    
+    {% if materials %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="50">№</th>
+                            <th>Название материала</th>
+                            <th>Тип</th>
+                            <th>Порядок</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for material in materials|sort(attribute='order') %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                <strong>{{ material.title }}</strong>
+                                {% if material.content %}
+                                <br><small class="text-muted">{{ material.content[:80] }}...</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if material.type == 'text' %}
+                                <span class="badge bg-primary">Текст</span>
+                                {% elif material.type == 'video' %}
+                                <span class="badge bg-danger">Видео</span>
+                                {% elif material.type == 'pdf' %}
+                                <span class="badge bg-warning">PDF</span>
+                                {% elif material.type == 'link' %}
+                                <span class="badge bg-info">Ссылка</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ material.type }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ material.order }}</td>
+                            <td>
+                                {% if material.is_required %}
+                                <span class="badge bg-success">Обязательный</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Дополнительный</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/admin/material/{{ material.id }}/edit" class="btn btn-outline-secondary">
+                                        ✏️
+                                    </a>
+                                    <a href="/admin/material/{{ material.id }}/delete" 
+                                       class="btn btn-outline-danger"
+                                       onclick="return confirm('Удалить материал?')">
+                                        🗑️
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="display-4 text-muted mb-3">📄</div>
+            <h4>Материалы не добавлены</h4>
+            <p class="text-muted mb-4">Добавьте учебные материалы для этого курса</p>
+            <a href="/admin/material/new/{{ course.id }}" class="btn btn-success btn-lg">
+                ➕ Добавить первый материал
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">💡 Типы материалов</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card border-primary">
+                        <div class="card-body text-center">
+                            <div class="h2">📝</div>
+                            <h6>Текстовый</h6>
+                            <small>Инструкции, правила, рецепты</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-danger">
+                        <div class="card-body text-center">
+                            <div class="h2">🎥</div>
+                            <h6>Видео</h6>
+                            <small>Обучающие ролики</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <div class="h2">📎</div>
+                            <h6>PDF/Файлы</h6>
+                            <small>Презентации, чек-листы</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-info">
+                        <div class="card-body text-center">
+                            <div class="h2">🔗</div>
+                            <h6>Ссылка</h6>
+                            <small>Внешние ресурсы</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

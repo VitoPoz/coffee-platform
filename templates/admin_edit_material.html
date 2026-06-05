@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin">Админ</a></li>
+            <li class="breadcrumb-item"><a href="/admin/courses">Курсы</a></li>
+            <li class="breadcrumb-item"><a href="/admin/course/{{ course.id }}/materials">Материалы</a></li>
+            <li class="breadcrumb-item active">
+                {% if material %}Редактирование{% else %}Добавление{% endif %}
+            </li>
+        </ol>
+    </nav>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            {% if material %}
+                ✏️ Редактирование материала
+            {% else %}
+                ➕ Добавление материала к курсу
+            {% endif %}
+        </h2>
+        <a href="/admin/course/{{ course.id }}/materials" class="btn btn-secondary">← Назад</a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Название материала *</label>
+                            <input type="text" class="form-control" id="title" name="title" 
+                                   value="{{ material.title if material else '' }}" 
+                                   placeholder="Например: Техника латте-арта" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Тип материала *</label>
+                            <select class="form-select" id="type" name="type" required>
+                                <option value="text" {% if material and material.type == 'text' %}selected{% endif %}>
+                                    📝 Текстовый материал
+                                </option>
+                                <option value="video" {% if material and material.type == 'video' %}selected{% endif %}>
+                                    🎥 Видео
+                                </option>
+                                <option value="pdf" {% if material and material.type == 'pdf' %}selected{% endif %}>
+                                    📎 PDF/Файл
+                                </option>
+                                <option value="link" {% if material and material.type == 'link' %}selected{% endif %}>
+                                    🔗 Ссылка
+                                </option>
+                                <option value="image" {% if material and material.type == 'image' %}selected{% endif %}>
+                                    🖼️ Изображение
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="content" class="form-label">
+                                Содержание {% if not material or material.type == 'text' %}*{% endif %}
+                            </label>
+                            <textarea class="form-control" id="content" name="content" 
+                                      rows="8" 
+                                      placeholder="Подробное описание, инструкция или текст материала...">
+                                {{ material.content if material else '' }}
+                            </textarea>
+                            <small class="text-muted">
+                                Для видео/ссылок - вставьте URL. Для текста - содержание.
+                            </small>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="order" class="form-label">Порядок в курсе</label>
+                                    <input type="number" class="form-control" id="order" name="order"
+                                           value="{{ material.order if material else 0 }}" min="0">
+                                    <small class="text-muted">Чем меньше число, тем раньше показывается</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3 pt-4">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="is_required" name="is_required"
+                                               {% if not material or material.is_required %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_required">
+                                            Обязательный материал
+                                        </label>
+                                        <small class="text-muted d-block">
+                                            Сотрудник должен изменить этот материал для продолжения
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                {% if material %}
+                                    Обновить материал
+                                {% else %}
+                                    Добавить материал
+                                {% endif %}
+                            </button>
+                            <a href="/admin/course/{{ course.id }}/materials" class="btn btn-secondary">Отмена</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">ℹ️ Информация о курсе</h5>
+                </div>
+                <div class="card-body">
+                    <h6>{{ course.title }}</h6>
+                    <p class="small text-muted">{{ course.description[:100] }}...</p>
+                    
+                    <div class="mb-3">
+                        <span class="badge bg-info">{{ course.category }}</span>
+                        <span class="badge bg-secondary">{{ course.required_position }}</span>
+                    </div>
+                    
+                    <p class="small">
+                        <strong>ID курса:</strong> {{ course.id }}<br>
+                        <strong>Всего материалов:</strong> {{ course.materials|length }}
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">💡 Примеры материалов</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="small mb-0">
+                        <li><strong>Текстовый:</strong> "Стандарт приготовления эспрессо"</li>
+                        <li><strong>Видео:</strong> "Техника темперовки кофе" (YouTube ссылка)</li>
+                        <li><strong>PDF:</strong> "Чек-лист открытия смены"</li>
+                        <li><strong>Ссылка:</strong> "Ресурсы по кофе SCA"</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

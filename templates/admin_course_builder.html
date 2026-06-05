@@ -1,0 +1,723 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Шапка -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1>Конструктор курса: {{ course.title }}</h1>
+            <p class="text-muted">{{ course.description }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('admin_courses') }}" class="btn btn-secondary">← К списку курсов</a>
+            <a href="{{ url_for('admin_edit_course', course_id=course.id) }}" class="btn btn-outline-primary">Настройки курса</a>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">📊 Структура курса</h5>
+                    <div class="text-muted">
+                        {% if sections_with_lessons %}
+                            <p>Разделов: {{ sections_with_lessons|length }} |
+                               Уроков: {{ total_lessons_count }}</p>
+                        {% else %}
+                            <p>Курс пустой. Начните с создания разделов!</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">🧪 Тесты</h5>
+                    <div class="text-muted">
+                        <p>Тестов: {{ tests|length }}</p>
+                        {% if tests %}
+                            <p>Вопросов: {{ total_questions_count }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">⚡ Быстрые действия</h5>
+                    <div>
+                        <button type="button" class="btn btn-success btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#newSectionModal">
+                            + Новый раздел
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm mb-2" data-bs-toggle="modal" data-bs-target="#newTestModal">
+                            + Новый тест
+                        </button>
+                        <a href="{{ url_for('admin_course_materials', course_id=course.id) }}" class="btn btn-outline-secondary btn-sm mb-2">
+                            📎 Материалы
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Структура курса -->
+    <div class="row">
+        <!-- Разделы и уроки -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📚 Разделы и уроки</h5>
+                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newSectionModal">
+                        + Добавить раздел
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if sections_with_lessons %}
+                        <div class="accordion" id="sectionsAccordion">
+                            {% for item in sections_with_lessons %}
+                            {% set section = item.section %}
+                            {% set lessons = item.lessons %}
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#section{{ section.id }}">
+                                        <div class="d-flex justify-content-between align-items-center w-100">
+                                            <div>
+                                                <strong>{{ section.order }}. {{ section.title }}</strong>
+                                                {% if section.description %}
+                                                <span class="text-muted ms-2">- {{ section.description }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="text-muted">
+                                                {{ lessons|length }} уроков
+                                            </div>
+                                        </div>
+                                    </button>
+                                </h2>
+                                <div id="section{{ section.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#sectionsAccordion">
+                                    <div class="accordion-body">
+                                        <!-- Кнопка добавления урока -->
+                                        <div class="mb-3">
+                                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newLessonModal{{ section.id }}">
+                                                + Добавить урок
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#editSectionModal{{ section.id }}">
+                                                ✏️ Редактировать
+                                            </button>
+                                            <a href="{{ url_for('admin_delete_section', section_id=section.id) }}" class="btn btn-outline-danger btn-sm ms-2" onclick="return confirm('Удалить раздел и все уроки?')">
+                                                🗑️ Удалить
+                                            </a>
+                                        </div>
+
+                                        <!-- Список уроков -->
+                                        {% if lessons %}
+                                            <div class="list-group">
+                                                {% for lesson in lessons %}
+                                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>{{ lesson.order }}. {{ lesson.title }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            Тип: {{ lesson.type }}
+                                                            {% if lesson.duration %}| Длительность: {{ lesson.duration }} мин{% endif %}
+                                                            {% if lesson.is_required %}| Обязательный{% endif %}
+                                                        </small>
+                                                    </div>
+                                                    <div>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editLessonModal{{ lesson.id }}">
+                                                            ✏️
+                                                        </button>
+                                                        <a href="{{ url_for('admin_delete_lesson', lesson_id=lesson.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Удалить урок?')">
+                                                            🗑️
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                                <!-- Модальное окно редактирования урока -->
+                                                <div class="modal fade" id="editLessonModal{{ lesson.id }}" tabindex="-1">
+                                                    <div class="modal-dialog">
+                                                        <div class="modal-content">
+                                                            <!-- ⭐ ДОБАВЛЕНО enctype -->
+                                                            <form method="POST" action="{{ url_for('admin_edit_lesson', lesson_id=lesson.id) }}" enctype="multipart/form-data">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title">Редактирование урока</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label">Название</label>
+                                                                        <input type="text" class="form-control" name="title" value="{{ lesson.title }}" required>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label">Тип</label>
+                                                                        <select class="form-select" name="type">
+                                                                            <option value="text" {% if lesson.type == 'text' %}selected{% endif %}>Текст</option>
+                                                                            <option value="video" {% if lesson.type == 'video' %}selected{% endif %}>Видео</option>
+                                                                            <option value="pdf" {% if lesson.type == 'pdf' %}selected{% endif %}>PDF</option>
+                                                                            <option value="presentation" {% if lesson.type == 'presentation' %}selected{% endif %}>Презентация</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label">Содержание (HTML)</label>
+                                                                        <textarea class="form-control" name="content" rows="4">{{ lesson.content }}</textarea>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label">Ссылка на медиа (если нужно)</label>
+                                                                        <input type="text" class="form-control" name="media_url" value="{{ lesson.media_url or '' }}">
+                                                                        <!-- Для PDF загрузки -->
+                                                                        {% if lesson.type == 'pdf' or lesson.type == 'presentation' %}
+                                                                        <div class="mb-3">
+                                                                            <label class="form-label">Или загрузите PDF файл:</label>
+                                                                            <input type="file" class="form-control" name="pdf_file" accept=".pdf">
+                                                                            <small class="text-muted">Макс. размер: 50 МБ. Существующий файл: 
+                                                                                {% if lesson.media_url and lesson.media_url.startswith('/static/presentations/') %}
+                                                                                <a href="{{ lesson.media_url }}" target="_blank">открыть</a>
+                                                                                {% else %}(нет){% endif %}
+                                                                            </small>
+                                                                        </div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                    <div class="row">
+                                                                        <div class="col-md-6">
+                                                                            <div class="mb-3">
+                                                                                <label class="form-label">Длительность (мин)</label>
+                                                                                <input type="number" class="form-control" name="duration" value="{{ lesson.duration or '' }}">
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <div class="mb-3">
+                                                                                <label class="form-label">Порядок</label>
+                                                                                <input type="number" class="form-control" name="order" value="{{ lesson.order }}">
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="form-check mb-3">
+                                                                        <input class="form-check-input" type="checkbox" name="is_required" {% if lesson.is_required %}checked{% endif %}>
+                                                                        <label class="form-check-label">Обязательный урок</label>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                В этом разделе пока нет уроков. Добавьте первый урок!
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>В этом курсе пока нет разделов. Создайте первый раздел!</p>
+                            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newSectionModal">
+                                Создать раздел
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Тесты -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">🧪 Тесты</h5>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newTestModal">
+                        + Добавить тест
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if tests %}
+                        <div class="list-group">
+                            {% for test in tests %}
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ test.order }}. {{ test.title }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            Вопросов: {{ test.questions|length }} |
+                                            Проходной балл: {{ test.passing_score }}%
+                                            {% if test.section_id %}
+                                            <br>Для раздела: {{ test.section.title if test.section else 'Неизвестно' }}
+                                            {% else %}
+                                            <br>Для всего курса
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editTestModal{{ test.id }}">
+                                            ✏️
+                                        </button>
+                                        <a href="{{ url_for('admin_delete_test', test_id=test.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Удалить тест и все вопросы?')">
+                                            🗑️
+                                        </a>
+                                    </div>
+                                </div>
+                                
+                                <!-- Вопросы теста -->
+                                {% if test.questions %}
+                                    <div class="mt-3">
+                                        <small><strong>Вопросы:</strong></small>
+                                        <ul class="list-unstyled ms-3 mt-2">
+                                            {% for question in test.questions %}
+                                            <li class="mb-2">
+                                                <div class="d-flex justify-content-between">
+                                                    <div>
+                                                        <small>{{ question.order }}. {{ question.question_text[:50] }}...</small>
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            Тип: {{ question.question_type }} | 
+                                                            Баллы: {{ question.points }}
+                                                        </small>
+                                                    </div>
+                                                    <div>
+                                                        <button type="button" class="btn btn-xs btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editQuestionModal{{ question.id }}">
+                                                            ✏️
+                                                        </button>
+                                                        <a href="{{ url_for('admin_delete_question', question_id=question.id) }}" class="btn btn-xs btn-outline-danger" onclick="return confirm('Удалить вопрос?')">
+                                                            🗑️
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                {% endif %}
+                                
+                                <!-- Кнопка добавления вопроса -->
+                                <div class="mt-3">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#newQuestionModal{{ test.id }}">
+                                        + Добавить вопрос
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <p>В этом курсе пока нет тестов. Создайте первый тест!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна -->
+<!-- Модальное окно нового раздела -->
+<div class="modal fade" id="newSectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin_new_section', course_id=course.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создание нового раздела</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название раздела</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Порядок</label>
+                        <input type="number" class="form-control" name="order" value="1">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно нового теста -->
+<div class="modal fade" id="newTestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin_new_test', course_id=course.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создание нового теста</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название теста</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" name="description" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Для раздела (оставьте пустым для теста курса)</label>
+                        <select class="form-select" name="section_id">
+                            <option value="">Для всего курса</option>
+                            {% for item in sections_with_lessons %}
+                            <option value="{{ item.section.id }}">{{ item.section.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Порядок</label>
+                                <input type="number" class="form-control" name="order" value="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Проходной балл (%)</label>
+                                <input type="number" class="form-control" name="passing_score" value="70" min="0" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_final">
+                        <label class="form-check-label">Финальный тест курса</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна для каждого раздела -->
+{% for item in sections_with_lessons %}
+{% set section = item.section %}
+<!-- Модальное окно редактирования раздела -->
+<div class="modal fade" id="editSectionModal{{ section.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin_edit_section', section_id=section.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактирование раздела</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название раздела</label>
+                        <input type="text" class="form-control" name="title" value="{{ section.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" name="description" rows="2">{{ section.description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Порядок</label>
+                        <input type="number" class="form-control" name="order" value="{{ section.order }}">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно нового урока для раздела -->
+<div class="modal fade" id="newLessonModal{{ section.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <!-- ⭐ ДОБАВЛЕНО enctype -->
+            <form method="POST" action="{{ url_for('admin_new_lesson', section_id=section.id) }}" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Создание нового урока</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название урока</label>
+                        <input type="text" class="form-control" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Тип</label>
+                        <select class="form-select" name="type">
+                            <option value="text">Текст</option>
+                            <option value="video">Видео</option>
+                            <option value="pdf">PDF</option>
+                            <option value="presentation">Презентация</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Содержание (HTML)</label>
+                        <textarea class="form-control" name="content" rows="4"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ссылка на медиа (если нужно)</label>
+                        <input type="text" class="form-control" name="media_url">
+                        <!-- ⭐ ДОБАВЛЕНО поле для PDF -->
+                        <div class="mb-3">
+                            <label class="form-label">Или загрузите PDF файл:</label>
+                            <input type="file" class="form-control" name="pdf_file" accept=".pdf">
+                            <small class="text-muted">Макс. размер: 50 МБ</small>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Длительность (мин)</label>
+                                <input type="number" class="form-control" name="duration">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Порядок</label>
+                                <input type="number" class="form-control" name="order" value="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_required" checked>
+                        <label class="form-check-label">Обязательный урок</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Модальные окна для каждого теста -->
+{% for test in tests %}
+<!-- Модальное окно редактирования теста -->
+<div class="modal fade" id="editTestModal{{ test.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin_edit_test', test_id=test.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактирование теста</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Название теста</label>
+                        <input type="text" class="form-control" name="title" value="{{ test.title }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Описание</label>
+                        <textarea class="form-control" name="description" rows="2">{{ test.description }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Для раздела (оставьте пустым для теста курса)</label>
+                        <select class="form-select" name="section_id">
+                            <option value="">Для всего курса</option>
+                            {% for item in sections_with_lessons %}
+                            <option value="{{ item.section.id }}" {% if test.section_id == item.section.id %}selected{% endif %}>
+                                {{ item.section.title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Порядок</label>
+                                <input type="number" class="form-control" name="order" value="{{ test.order }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Проходной балл (%)</label>
+                                <input type="number" class="form-control" name="passing_score" value="{{ test.passing_score }}" min="0" max="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="is_final" {% if test.is_final %}checked{% endif %}>
+                        <label class="form-check-label">Финальный тест курса</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно нового вопроса для теста -->
+<div class="modal fade" id="newQuestionModal{{ test.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin_new_question', test_id=test.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавление нового вопроса</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Текст вопроса</label>
+                        <textarea class="form-control" name="question_text" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Тип вопроса</label>
+                        <select class="form-select" name="question_type" id="questionType{{ test.id }}" onchange="toggleOptions(this, {{ test.id }})">
+                            <option value="single_choice">Один правильный ответ</option>
+                            <option value="multiple_choice">Несколько правильных ответов</option>
+                            <option value="text">Текстовый ответ</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="optionsSection{{ test.id }}">
+                        <label class="form-label">Варианты ответов (разделитель |)</label>
+                        <textarea class="form-control" name="options" rows="4" placeholder="Вариант 1|Вариант 2|Вариант 3"></textarea>
+                        <small class="form-text text-muted">Используйте символ "|" для разделения вариантов</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Правильный ответ</label>
+                        <input type="text" class="form-control" name="correct_answer" required>
+                        <small class="form-text text-muted">
+                            Для одного ответа: текст варианта<br>
+                            Для нескольких: текст через запятую (например, "Вариант 1, Вариант 3")<br>
+                            Для текстового: точный текст ответа
+                        </small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Баллы</label>
+                                <input type="number" class="form-control" name="points" value="1" min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Порядок</label>
+                                <input type="number" class="form-control" name="order" value="{{ test.questions|length + 1 }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Объяснение (появится после ответа)</label>
+                        <textarea class="form-control" name="explanation" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Добавить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальные окна для каждого вопроса -->
+{% for question in test.questions %}
+<!-- Модальное окно редактирования вопроса -->
+<div class="modal fade" id="editQuestionModal{{ question.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin_edit_question', question_id=question.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Редактирование вопроса</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Текст вопроса</label>
+                        <textarea class="form-control" name="question_text" rows="3" required>{{ question.question_text }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Тип вопроса</label>
+                        <select class="form-select" name="question_type">
+                            <option value="single_choice" {% if question.question_type == 'single_choice' %}selected{% endif %}>Один правильный ответ</option>
+                            <option value="multiple_choice" {% if question.question_type == 'multiple_choice' %}selected{% endif %}>Несколько правильных ответов</option>
+                            <option value="text" {% if question.question_type == 'text' %}selected{% endif %}>Текстовый ответ</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Варианты ответов (разделитель |)</label>
+                        <textarea class="form-control" name="options" rows="4">{{ question.options }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Правильный ответ</label>
+                        <input type="text" class="form-control" name="correct_answer" value="{{ question.correct_answer }}" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Баллы</label>
+                                <input type="number" class="form-control" name="points" value="{{ question.points }}" min="1">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Порядок</label>
+                                <input type="number" class="form-control" name="order" value="{{ question.order }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Объяснение</label>
+                        <textarea class="form-control" name="explanation" rows="2">{{ question.explanation }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endfor %}
+
+<script>
+function toggleOptions(select, testId) {
+    const optionsSection = document.getElementById('optionsSection' + testId);
+    const questionType = select.value;
+    
+    if (questionType === 'text') {
+        optionsSection.style.display = 'none';
+    } else {
+        optionsSection.style.display = 'block';
+    }
+}
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    // Для каждого теста скрываем/показываем опции в зависимости от типа вопроса
+    {% for test in tests %}
+    const select{{ test.id }} = document.getElementById('questionType{{ test.id }}');
+    if (select{{ test.id }}) {
+        toggleOptions(select{{ test.id }}, {{ test.id }});
+    }
+    {% endfor %}
+});
+</script>
+
+{% endblock %}

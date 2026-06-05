@@ -1,0 +1,84 @@
+{% if item.type == 'folder' %}
+<!-- Раздел (модуль) -->
+<div class="course-folder mb-3">
+    <div class="folder-header p-3 rounded d-flex justify-content-between align-items-center"
+         onclick="toggleFolder(this)"
+         style="cursor: pointer; background-color: {% if level == 0 %}#f8f9fa{% else %}#f1f3f4{% endif %};">
+        <div>
+            <i class="fas {% if level == 0 %}fa-folder-open{% else %}fa-folder{% endif %} text-warning me-2"></i>
+            <strong>{{ item.title }}</strong>
+            {% if item.description %}
+            <small class="text-muted"> - {{ item.description }}</small>
+            {% endif %}
+        </div>
+        <div>
+            <span class="badge bg-secondary">{{ item.children|length if item.children else 0 }} элементов</span>
+            {% if item.is_required %}
+            <span class="badge bg-warning ms-1">Обязательно</span>
+            {% endif %}
+            <i class="fas fa-chevron-down ms-2 toggle-icon"></i>
+        </div>
+    </div>
+    
+    <!-- Вложенные элементы -->
+    {% if item.children %}
+    <div class="folder-content ms-4 mt-2" style="display: none;">
+        {% for child in item.children|sort(attribute='order') %}
+            {% with item=child, level=level+1 %}
+                {% include 'partials/course_item.html' %}
+            {% endwith %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+{% elif item.type == 'lesson' %}
+<!-- Урок со ссылкой -->
+<div class="course-lesson mb-2 p-3 border rounded" style="margin-left: {{ level * 20 }}px;">
+    <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+            <div class="d-flex align-items-center mb-2">
+                {% if item.media_url %}
+                    {% if 'youtube' in item.media_url or 'vimeo' in item.media_url or 'video' in item.media_url %}
+                    <span class="badge bg-danger me-2">ВИДЕО</span>
+                    {% elif item.media_url.endswith('.pdf') %}
+                    <span class="badge bg-warning me-2">PDF</span>
+                    {% else %}
+                    <span class="badge bg-primary me-2">ТЕКСТ</span>
+                    {% endif %}
+                {% else %}
+                    <span class="badge bg-primary me-2">ТЕКСТ</span>
+                {% endif %}
+                
+                <!-- Добавляем ссылку на урок -->
+                <h6 class="mb-0">
+                    <a href="{{ url_for('view_lesson', course_id=course.id, lesson_id=item.id) }}" 
+                       class="text-decoration-none">
+                        {{ item.title }}
+                    </a>
+                </h6>
+                
+                {% if item.is_required %}
+                <span class="badge bg-warning ms-2">Обязательно</span>
+                {% endif %}
+            </div>
+            
+            {% if item.description %}
+            <p class="text-muted mb-2">{{ item.description }}</p>
+            {% endif %}
+            
+            <!-- Иконка статуса изучения (будет добавляться позже) -->
+            <div class="lesson-status mt-2">
+                <span class="badge bg-secondary lesson-completed-badge" 
+                      id="lesson-status-{{ item.id }}" 
+                      style="display: none;">
+                    <i class="fas fa-check-circle"></i> Изучено
+                </span>
+            </div>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-secondary">Шаг {{ item.order }}</span>
+        </div>
+    </div>
+</div>
+{% endif %}

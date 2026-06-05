@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📖 Библиотека стандартов (админ)</h2>
+        <a href="/admin/library/new" class="btn btn-success">➕ Добавить стандарт</a>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Название</th>
+                                    <th>Категория</th>
+                                    <th>Содержание</th>
+                                    <th>Дата добавления</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for standard in standards %}
+                                <tr>
+                                    <td>{{ standard.id }}</td>
+                                    <td>
+                                        <strong>{{ standard.title }}</strong>
+                                        {% if standard.file_url %}
+                                        <br><small class="text-muted">📎 Есть файл</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ standard.category }}</span>
+                                    </td>
+                                    <td>
+                                        <small>{{ standard.content[:100] if standard.content else '' }}...</small>
+                                    </td>
+                                    <td>{{ standard.created_at.strftime('%d.%m.%Y') }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="#" class="btn btn-outline-primary" disabled>👁️</a>
+                                            <a href="#" class="btn btn-outline-secondary" disabled>✏️</a>
+                                            <button class="btn btn-outline-danger" disabled>🗑️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">ℹ️ О библиотеке стандартов</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Библиотека стандартов</strong> — это хранилище всех важных материалов:</p>
+            <ul>
+                <li>Стандарты качества кофе</li>
+                <li>Инструкции по оборудованию</li>
+                <li>Правила обслуживания гостей</li>
+                <li>Рецепты напитков</li>
+                <li>Документы по безопасности</li>
+                <li>Бренд-бук и стандарты компании</li>
+            </ul>
+            <p class="text-muted">Сотрудники видят библиотеку в меню "Библиотека"</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

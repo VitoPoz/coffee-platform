@@ -1,0 +1,62 @@
+<div class="structure-item mb-2 border rounded" data-id="{{ item.id }}">
+    <div class="item-header p-3 d-flex justify-content-between align-items-center {% if item.type == 'folder' %}bg-warning bg-opacity-10{% else %}bg-info bg-opacity-10{% endif %}">
+        <div class="d-flex align-items-center">
+            <div class="handle me-2" style="cursor: move;">
+                <i class="fas fa-arrows-alt"></i>
+            </div>
+            
+            {% if item.type == 'folder' %}
+            <i class="fas fa-folder text-warning me-2"></i>
+            {% else %}
+            <i class="fas fa-file-alt text-info me-2"></i>
+            {% endif %}
+            
+            <div>
+                <strong>{{ item.title }}</strong>
+                {% if item.description %}
+                <small class="text-muted d-block">{{ item.description|truncate(100) }}</small>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="d-flex align-items-center">
+            <span class="badge bg-secondary me-2">Порядок: {{ item.order }}</span>
+            {% if item.is_required %}
+            <span class="badge bg-warning me-2">Обязательно</span>
+            {% endif %}
+            
+            <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('edit_section', section_id=item.id) }}" 
+                   class="btn btn-outline-primary">
+                    <i class="fas fa-edit"></i>
+                </a>
+                
+                {% if item.type == 'folder' %}
+                <a href="{{ url_for('add_section', course_id=course.id) }}?parent_id={{ item.id }}&type=lesson" 
+                   class="btn btn-outline-success" 
+                   title="Добавить урок в этот раздел">
+                    <i class="fas fa-plus"></i>
+                </a>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('delete_section', section_id=item.id) }}" 
+                      onsubmit="return confirm('Удалить этот элемент?');" 
+                      class="d-inline">
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    {% if item.children %}
+    <div class="nested-sortable ms-4 p-2">
+        {% for child in item.children %}
+            {% with item=child %}
+                {% include 'admin/partials/structure_item.html' %}
+            {% endwith %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>

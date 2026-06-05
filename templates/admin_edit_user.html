@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>✏️ Редактирование пользователя</h2>
+        <a href="/admin/users" class="btn btn-secondary">← Назад к списку</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Имя и фамилия *</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ user.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ user.email }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="position" class="form-label">Должность *</label>
+                            <select class="form-select" id="position" name="position" required>
+                                {% for position in positions %}
+                                <option value="{{ position }}" 
+                                        {% if user.position == position %}selected{% endif %}>
+                                    {{ position }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Права доступа</label>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin"
+                                       {% if user.is_admin %}checked{% endif %}>
+                                <label class="form-check-label" for="is_admin">
+                                    Администратор
+                                </label>
+                                <small class="text-muted d-block">
+                                    Администраторы имеют доступ ко всем функциям системы
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <strong>Примечание:</strong> Пароль пользователя нельзя изменить через интерфейс. 
+                    Попросите пользователя использовать функцию "Забыли пароль" или сообщите ему текущий пароль.
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    <a href="/admin/users" class="btn btn-secondary">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">📈 Прогресс обучения</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Статистика по курсам скоро будет доступна</p>
+            <button class="btn btn-outline-primary" disabled>Просмотреть прогресс</button>
+            <button class="btn btn-outline-warning" disabled>Сбросить прогресс</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📚 Управление курсами</h2>
+        <a href="/admin/course/new" class="btn btn-success">➕ Новый курс</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="50">#</th>
+                            <th>Название курса</th>
+                            <th>Категория</th>
+                            <th>Для кого</th>
+                            <th>Порядок</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in courses %}
+                        <tr>
+                            <td>{{ course.id }}</td>
+                            <td>
+                                <strong>{{ course.title }}</strong><br>
+                                <small class="text-muted">{{ course.description[:50] }}...</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ course.category }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ course.required_position }}</span>
+                            </td>
+                            <td>{{ course.order }}</td>
+                            <td>
+                                {% if course.is_published %}
+                                <span class="badge bg-success">Опубликован</span>
+                                {% else %}
+                                <span class="badge bg-warning">Черновик</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/course/{{ course.id }}" class="btn btn-outline-primary" target="_blank">
+                                        👁️ Просмотр
+                                    </a>
+                                    <a href="{{ url_for('admin_edit_course', course_id=course.id) }}" class="btn btn-outline-secondary">
+                                        ✏️ Редактировать
+                                    </a>
+                                    <!-- КНОПКА КОНСТРУКТОРА -->
+                                    <a href="{{ url_for('admin_course_builder', course_id=course.id) }}" class="btn btn-outline-primary">
+                                        🔨 Конструктор
+                                    </a>
+                                    <a href="{{ url_for('admin_delete_course', course_id=course.id) }}" class="btn btn-outline-danger"
+                                       onclick="return confirm('Удалить курс?')">
+                                        🗑️ Удалить
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">ℹ️ Как работает система курсов</h5>
+        </div>
+        <div class="card-body">
+            <ol>
+                <li><strong>Базовые курсы</strong> (required_position = "Все") — видят все сотрудники</li>
+                <li><strong>Специализированные курсы</strong> — видят только сотрудники определенной должности</li>
+                <li><strong>Порядок (order)</strong> — определяет последовательность обучения</li>
+                <li>Сотрудник видит следующий курс только после завершения предыдущего</li>
+            </ol>
+        </div>
+    </div>
+</div>
+{% endblock %}

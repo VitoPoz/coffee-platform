@@ -1,0 +1,237 @@
+/* ========== ОСНОВНЫЕ ЦВЕТА КОФЕЙНИ ========== */
+:root {
+    --coffee-brown: #8B7355;      /* Основной коричневый */
+    --coffee-light: #D4B996;      /* Светлый бежевый */
+    --coffee-cream: #F5E9D9;      /* Кремовый фон */
+    --coffee-green: #6B8E23;      /* Зеленый (как листья) */
+    --coffee-dark: #5D432C;       /* Темный коричневый */
+    --coffee-mocha: #A0522D;      /* Мокко */
+    --coffee-latte: #FFF8E7;      /* Цвет латте */
+}
+
+/* ========== ОСНОВНЫЕ СТИЛИ ========== */
+body {
+    background-color: var(--coffee-cream);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--coffee-dark);
+    line-height: 1.6;
+}
+
+/* ========== НАВИГАЦИЯ ========== */
+.navbar {
+    background: linear-gradient(135deg, var(--coffee-dark) 0%, var(--coffee-brown) 100%) !important;
+    box-shadow: 0 2px 10px rgba(139, 115, 85, 0.2);
+}
+
+.navbar-brand {
+    font-weight: 800;
+    font-size: 1.8rem;
+    color: var(--coffee-light) !important;
+    font-family: 'Georgia', serif;
+}
+
+.navbar-brand:hover {
+    color: white !important;
+}
+
+.nav-link {
+    color: var(--coffee-light) !important;
+    font-weight: 500;
+}
+
+.nav-link:hover {
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+/* ========== КНОПКИ ========== */
+.btn-primary {
+    background-color: var(--coffee-green);
+    border-color: var(--coffee-green);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #5a7a1a;
+    border-color: #5a7a1a;
+}
+
+.btn-secondary {
+    background-color: var(--coffee-brown);
+    border-color: var(--coffee-brown);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: var(--coffee-dark);
+    border-color: var(--coffee-dark);
+}
+
+.btn-success {
+    background-color: var(--coffee-green);
+    border-color: var(--coffee-green);
+}
+
+.btn-warning {
+    background-color: #FFA500; /* Оранжевый для админки */
+    border-color: #FFA500;
+}
+
+.btn-info {
+    background-color: var(--coffee-light);
+    border-color: var(--coffee-light);
+    color: var(--coffee-dark);
+}
+
+.btn-info:hover {
+    background-color: #c9a87d;
+    border-color: #c9a87d;
+}
+
+/* ========== КАРТОЧКИ ========== */
+.card {
+    background-color: white;
+    border: 1px solid var(--coffee-light);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(139, 115, 85, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 20px;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(139, 115, 85, 0.15);
+}
+
+.card-header {
+    background-color: var(--coffee-latte);
+    border-bottom: 1px solid var(--coffee-light);
+    color: var(--coffee-dark);
+    font-weight: 600;
+    border-radius: 12px 12px 0 0 !important;
+}
+
+/* ========== ГЛАВНАЯ СТРАНИЦА ========== */
+.jumbotron {
+    background: linear-gradient(135deg, var(--coffee-brown) 0%, var(--coffee-green) 100%);
+    color: white;
+    padding: 4rem 2rem;
+    border-radius: 20px;
+    margin-bottom: 3rem;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.display-4 {
+    color: white;
+    font-weight: 800;
+    font-family: 'Georgia', serif;
+}
+
+.lead {
+    font-size: 1.4rem;
+    opacity: 0.9;
+}
+
+/* ========== БЭЙДЖИ ========== */
+.badge {
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 20px;
+}
+
+.bg-primary {
+    background-color: var(--coffee-green) !important;
+}
+
+.bg-secondary {
+    background-color: var(--coffee-brown) !important;
+}
+
+.bg-success {
+    background-color: var(--coffee-green) !important;
+}
+
+.bg-info {
+    background-color: var(--coffee-light) !important;
+    color: var(--coffee-dark);
+}
+
+.bg-warning {
+    background-color: #FFA500 !important;
+}
+
+.bg-dark {
+    background-color: var(--coffee-dark) !important;
+}
+
+/* ========== ФОРМЫ ========== */
+.form-control {
+    border: 1px solid var(--coffee-light);
+    border-radius: 8px;
+    padding: 10px 15px;
+}
+
+.form-control:focus {
+    border-color: var(--coffee-green);
+    box-shadow: 0 0 0 0.25rem rgba(107, 142, 35, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: var(--coffee-green);
+    border-color: var(--coffee-green);
+}
+
+/* ========== ПРОГРЕСС-БАР ========== */
+.progress {
+    background-color: var(--coffee-light);
+    border-radius: 10px;
+    height: 20px;
+}
+
+.progress-bar {
+    background-color: var(--coffee-green);
+    border-radius: 10px;
+}
+
+/* ========== ФУТЕР ========== */
+footer {
+    background-color: var(--coffee-dark);
+    color: var(--coffee-light);
+    padding: 2rem 0;
+    margin-top: 4rem;
+    border-top: 3px solid var(--coffee-brown);
+}
+
+/* ========== АДМИН-ПАНЕЛЬ (желтые акценты) ========== */
+.admin-panel .card-header {
+    background-color: #FFF3CD;
+    color: #856404;
+    border-color: #FFEAA7;
+}
+
+.admin-panel .btn-warning {
+    background-color: #FFC107;
+    border-color: #FFC107;
+    color: #212529;
+}
+
+/* ========== ТАБЛИЦЫ ========== */
+.table {
+    color: var(--coffee-dark);
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--coffee-latte);
+}
+
+/* ========== АДАПТИВНОСТЬ ========== */
+@media (max-width: 768px) {
+    .jumbotron {
+        padding: 2rem 1rem;
+    }
+    
+    .display-4 {
+        font-size: 2.5rem;
+    }
+}

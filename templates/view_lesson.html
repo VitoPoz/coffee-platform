@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/dashboard">Панель</a></li>
+            <li class="breadcrumb-item"><a href="/courses">Курсы</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a></li>
+            <li class="breadcrumb-item active">{{ lesson.title }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Заголовок урока -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">{{ lesson.title }}</h4>
+                        {% if lesson.duration %}
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-clock"></i> {{ lesson.duration }} мин.
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Описание урока -->
+                    {% if lesson.description %}
+                    <div class="alert alert-info">
+                        {{ lesson.description }}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Контент урока -->
+                    <div class="lesson-content">
+                        {% if lesson.content %}
+                            {{ lesson.content|safe }}
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Медиа контент -->
+                    {% if lesson.media_url %}
+                        {% if 'youtube' in lesson.media_url %}
+                        <div class="ratio ratio-16x9 mt-3">
+                            <iframe src="{{ lesson.media_url }}" 
+                                    allowfullscreen
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                            </iframe>
+                        </div>
+                        {% elif lesson.media_url.endswith('.pdf') %}
+                        <div class="mt-3">
+                            <a href="{{ lesson.media_url }}" class="btn btn-primary" target="_blank">
+                                <i class="fas fa-file-pdf"></i> Открыть PDF
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="mt-3">
+                            <a href="{{ lesson.media_url }}" class="btn btn-primary" target="_blank">
+                                <i class="fas fa-external-link-alt"></i> Открыть материал
+                            </a>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            {% if prev_lesson %}
+                            <a href="{{ url_for('view_lesson', course_id=course.id, lesson_id=prev_lesson.id) }}" 
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Предыдущий урок
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Кнопка отметки о прохождении -->
+                        <button class="btn btn-success" onclick="markLessonCompleted({{ lesson.id }})" 
+                                id="completeLessonBtn">
+                            <i class="fas fa-check-circle"></i> Отметить как изученный
+                        </button>
+                        
+                        <div>
+                            {% if next_lesson %}
+                            <a href="{{ url_for('view_lesson', course_id=course.id, lesson_id=next_lesson.id) }}" 
+                               class="btn btn-outline-secondary">
+                                Следующий урок <i class="fas fa-arrow-right"></i>
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('course_detail', course_id=course.id) }}" 
+                               class="btn btn-outline-primary">
+                                Завершить курс <i class="fas fa-flag-checkered"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Правая колонка - прогресс -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Прогресс урока</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <div class="display-4 text-success" id="lessonStatusIcon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <h5 id="lessonStatus">Не изучен</h5>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-success" onclick="markLessonCompleted({{ lesson.id }})">
+                            <i class="fas fa-check-circle"></i> Отметить как изученный
+                        </button>
+                        <a href="{{ url_for('course_detail', course_id=course.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left"></i> К списку уроков
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Функция отметки урока как пройденного
+function markLessonCompleted(lessonId) {
+    fetch(`/api/lesson/${lessonId}/complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Меняем иконку и текст
+            document.getElementById('lessonStatusIcon').innerHTML = '<i class="fas fa-check-circle text-success"></i>';
+            document.getElementById('lessonStatus').innerHTML = 'Изучено!';
+            document.getElementById('completeLessonBtn').disabled = true;
+            document.getElementById('completeLessonBtn').innerHTML = '<i class="fas fa-check-circle"></i> Изучено';
+            
+            // Показываем уведомление
+            showNotification('Урок отмечен как изученный!', 'success');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка при отметке урока', 'danger');
+    });
+}
+
+// Функция показа уведомлений
+function showNotification(message, type = 'info') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.style.minWidth = '300px';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
+}
+</script>
+{% endblock %}

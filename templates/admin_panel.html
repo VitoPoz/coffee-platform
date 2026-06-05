@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>👑 Панель администратора</h2>
+        <div>
+            <a href="/admin/courses" class="btn btn-primary me-2">📚 Курсы</a>
+            <a href="/admin/users" class="btn btn-secondary me-2">👥 Пользователи</a>
+            <a href="/admin/library" class="btn btn-success">📖 Библиотека</a>
+        </div>
+    </div>
+    
+    <!-- Статистика -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.users }}</h5>
+                    <p class="card-text">Пользователей</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.courses }}</h5>
+                    <p class="card-text">Курсов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.active_courses }}</h5>
+                    <p class="card-text">Активных курсов</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.completed }}</h5>
+                    <p class="card-text">Завершенных</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Последние пользователи -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">👥 Последние пользователи</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Имя</th>
+                                    <th>Должность</th>
+                                    <th>Дата регистрации</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.name }}</td>
+                                    <td><span class="badge bg-secondary">{{ user.position }}</span></td>
+                                    <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <a href="/admin/users" class="btn btn-sm btn-outline-primary">Все пользователи →</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Последние курсы -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📚 Последние курсы</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for course in recent_courses %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ course.title }}</h6>
+                                    <small class="text-muted">
+                                        {{ course.category }} • {{ course.required_position }}
+                                    </small>
+                                </div>
+                                <a href="/admin/course/{{ course.id }}/edit" class="btn btn-sm btn-outline-secondary">
+                                    Редактировать
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="/admin/courses" class="btn btn-sm btn-outline-primary mt-3">Все курсы →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Быстрые действия -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">⚡ Быстрые действия</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <a href="/admin/course/new" class="btn btn-success w-100 mb-2">
+                        ➕ Создать новый курс
+                    </a>
+                    <small class="text-muted">Добавить курс обучения</small>
+                </div>
+                <div class="col-md-4">
+                    <a href="/admin/library/new" class="btn btn-info w-100 mb-2">
+                        📖 Добавить стандарт
+                    </a>
+                    <small class="text-muted">Добавить материал в библиотеку</small>
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-warning w-100 mb-2" disabled>
+                        📊 Статистика обучения
+                    </button>
+                    <small class="text-muted">Скоро будет доступно</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

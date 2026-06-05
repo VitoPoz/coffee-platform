@@ -1,0 +1,198 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin">Админ-панель</a></li>
+            <li class="breadcrumb-item"><a href="/admin/courses">Курсы</a></li>
+            <li class="breadcrumb-item active">Структура: {{ course.title }}</li>
+        </ol>
+    </nav>
+    
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>Структура курса: {{ course.title }}</h1>
+            <p class="lead text-muted">Управление разделами и уроками</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group">
+                <a href="/admin/course/{{ course.id }}/edit" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Назад к редактированию
+                </a>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-plus"></i> Добавить
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('add_section', course_id=course.id) }}?type=folder">
+                                <i class="fas fa-folder"></i> Раздел (модуль)
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('add_section', course_id=course.id) }}?type=lesson">
+                                <i class="fas fa-file-alt"></i> Урок без модуля
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Структура курса -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Структура курса</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="expandAll()">
+                        <i class="fas fa-expand"></i> Развернуть все
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="collapseAll()">
+                        <i class="fas fa-compress"></i> Свернуть все
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if tree %}
+            <div id="courseStructure" class="sortable-tree">
+                {% for item in tree %}
+                    {% include 'admin/partials/structure_item.html' %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="display-4 text-muted mb-3">📁</div>
+                <h4>Структура курса пуста</h4>
+                <p class="text-muted">Добавьте разделы или уроки для начала работы.</p>
+                <a href="{{ url_for('add_section', course_id=course.id) }}?type=folder" class="btn btn-primary">
+                    <i class="fas fa-folder-plus"></i> Добавить первый раздел
+                </a>
+                <a href="{{ url_for('add_section', course_id=course.id) }}?type=lesson" class="btn btn-outline-primary">
+                    <i class="fas fa-file-plus"></i> Добавить урок без модуля
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <div class="alert alert-info mb-0">
+                <i class="fas fa-info-circle"></i> 
+                Перетаскивайте элементы для изменения порядка. Желтые папки - разделы (модули), синие иконки - уроки.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript для управления структурой -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+<script>
+// Инициализация перетаскивания
+document.addEventListener('DOMContentLoaded', function() {
+    const tree = document.getElementById('courseStructure');
+    if (tree) {
+        new Sortable(tree, {
+            group: 'nested',
+            animation: 150,
+            fallbackOnBody: true,
+            swapThreshold: 0.65,
+            onEnd: function(evt) {
+                // Сохраняем новую структуру
+                saveStructure();
+            }
+        });
+    }
+    
+    // Инициализация вложенных списков
+    document.querySelectorAll('.nested-sortable').forEach(el => {
+        new Sortable(el, {
+            group: 'nested',
+            animation: 150,
+            onEnd: function(evt) {
+                saveStructure();
+            }
+        });
+    });
+});
+
+// Сохранение структуры
+function saveStructure() {
+    const structure = [];
+    const courseId = {{ course.id }};
+    
+    function parseElement(element, parentId = null) {
+        const itemId = element.getAttribute('data-id');
+        const order = Array.from(element.parentNode.children).indexOf(element);
+        
+        structure.push({
+            id: parseInt(itemId),
+            parent_id: parentId,
+            order: order
+        });
+        
+        // Рекурсивно обходим дочерние элементы
+        const childrenContainer = element.querySelector('.nested-sortable');
+        if (childrenContainer) {
+            Array.from(childrenContainer.children).forEach(child => {
+                parseElement(child, parseInt(itemId));
+            });
+        }
+    }
+    
+    // Парсим корневые элементы
+    const rootContainer = document.getElementById('courseStructure');
+    Array.from(rootContainer.children).forEach(child => {
+        parseElement(child, null);
+    });
+    
+    // Отправляем на сервер
+    fetch('/admin/section/reorder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            course_id: courseId,
+            items: structure
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Порядок сохранен', 'success');
+        }
+    });
+}
+
+// Вспомогательные функции
+function expandAll() {
+    document.querySelectorAll('.folder-content').forEach(el => {
+        el.style.display = 'block';
+    });
+}
+
+function collapseAll() {
+    document.querySelectorAll('.folder-content').forEach(el => {
+        el.style.display = 'none';
+    });
+}
+
+function showNotification(message, type) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
+}
+</script>
+{% endblock %}

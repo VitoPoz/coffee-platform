@@ -1,0 +1,93 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/admin">Админ-панель</a></li>
+            <li class="breadcrumb-item"><a href="/admin/courses">Курсы</a></li>
+            <li class="breadcrumb-item"><a href="/admin/course/{{ course.id }}/structure">Структура: {{ course.title }}</a></li>
+            <li class="breadcrumb-item active">Добавить {{ "раздел" if request.args.get('type') == 'folder' else 'урок' }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if request.args.get('type') == 'folder' %}
+                        <i class="fas fa-folder text-warning me-2"></i> Добавить раздел (модуль)
+                        {% else %}
+                        <i class="fas fa-file-alt text-info me-2"></i> Добавить урок
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="type" value="{{ request.args.get('type', 'folder') }}">
+                        {% if request.args.get('parent_id') %}
+                        <input type="hidden" name="parent_id" value="{{ request.args.get('parent_id') }}">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            Этот элемент будет добавлен в раздел с ID: {{ request.args.get('parent_id') }}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Название *</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Описание</label>
+                            <textarea class="form-control" id="description" name="description" rows="2"></textarea>
+                        </div>
+                        
+                        {% if request.args.get('type') == 'lesson' %}
+                        <div class="mb-3">
+                            <label for="content" class="form-label">Текст урока</label>
+                            <textarea class="form-control" id="content" name="content" rows="5"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="media_url" class="form-label">Ссылка на медиа (видео/файл)</label>
+                            <input type="url" class="form-control" id="media_url" name="media_url" placeholder="https://...">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="duration" class="form-label">Длительность (в минутах)</label>
+                            <input type="number" class="form-control" id="duration" name="duration" min="1" max="300">
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="order" class="form-label">Порядок</label>
+                                    <input type="number" class="form-control" id="order" name="order" value="0" min="0">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="is_required" name="is_required" checked>
+                                    <label class="form-check-label" for="is_required">Обязательный элемент</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('course_structure', course_id=course.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Сохранить
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

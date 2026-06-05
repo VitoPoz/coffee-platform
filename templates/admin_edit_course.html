@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            {% if course %}
+                ✏️ Редактирование курса: {{ course.title }}
+            {% else %}
+                ➕ Создание нового курса
+            {% endif %}
+        </h2>
+        <a href="/admin/courses" class="btn btn-secondary">← Назад к курсам</a>
+    </div>
+    
+    <!-- Вкладки -->
+    <ul class="nav nav-tabs mb-4" id="courseTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="basic-tab" data-bs-toggle="tab" 
+                    data-bs-target="#basic" type="button" role="tab">
+                📝 Основная информация
+            </button>
+        </li>
+        {% if course %}
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="materials-tab" data-bs-toggle="tab" 
+                    data-bs-target="#materials" type="button" role="tab">
+                📄 Материалы ({{ course.materials|length }})
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tests-tab" data-bs-toggle="tab" 
+                    data-bs-target="#tests" type="button" role="tab">
+                🧪 Тесты ({{ course.questions|length }})
+            </button>
+        </li>
+        {% endif %}
+    </ul>
+    
+    <!-- Содержимое вкладок -->
+    <div class="tab-content" id="courseTabsContent">
+        <!-- Вкладка 1: Основная информация -->
+        <div class="tab-pane fade show active" id="basic" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" action="{% if course %}/admin/course/{{ course.id }}/edit{% else %}/admin/course/new{% endif %}">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Название курса *</label>
+                                    <input type="text" class="form-control" id="title" name="title" 
+                                           value="{{ course.title if course else '' }}" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Описание курса</label>
+                                    <textarea class="form-control" id="description" name="description" 
+                                              rows="4">{{ course.description if course else '' }}</textarea>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="video_url" class="form-label">Ссылка на видео (YouTube)</label>
+                                    <input type="url" class="form-control" id="video_url" name="video_url"
+                                           value="{{ course.video_url if course else '' }}"
+                                           placeholder="https://www.youtube.com/embed/...">
+                                    <small class="text-muted">Скопируйте ссылку из "Поделиться" → "Встроить"</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="category" class="form-label">Категория</label>
+                                    <select class="form-select" id="category" name="category">
+                                        <option value="Базовый" {% if course and course.category == 'Базовый' %}selected{% endif %}>
+                                            Базовый
+                                        </option>
+                                        <option value="Профессиональный" {% if course and course.category == 'Профессиональный' %}selected{% endif %}>
+                                            Профессиональный
+                                        </option>
+                                        <option value="Безопасность" {% if course and course.category == 'Безопасность' %}selected{% endif %}>
+                                            Безопасность
+                                        </option>
+                                        <option value="Сервис" {% if course and course.category == 'Сервис' %}selected{% endif %}>
+                                            Сервис
+                                        </option>
+                                        <option value="Продукты" {% if course and course.category == 'Продукты' %}selected{% endif %}>
+                                            Продукты
+                                        </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="required_position" class="form-label">Для кого доступен *</label>
+                                    <select class="form-select" id="required_position" name="required_position" required>
+                                        <option value="Все">Все сотрудники</option>
+                                        {% for position in positions %}
+                                        <option value="{{ position }}" 
+                                                {% if course and course.required_position == position %}selected{% endif %}>
+                                            {{ position }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="order" class="form-label">Порядок в обучении</label>
+                                    <input type="number" class="form-control" id="order" name="order"
+                                           value="{{ course.order if course else 0 }}" min="0">
+                                    <small class="text-muted">Чем меньше число, тем раньше в списке</small>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="is_published" name="is_published"
+                                           {% if not course or course.is_published %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_published">
+                                        Опубликовать курс
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                {% if course %}
+                                    Обновить курс
+                                {% else %}
+                                    Создать курс
+                                {% endif %}
+                            </button>
+                            <a href="/admin/courses" class="btn btn-secondary">Отмена</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Вкладка 2: Материалы (только для существующего курса) -->
+        {% if course %}
+        <div class="tab-pane fade" id="materials" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📄 Материалы курса</h5>
+                    <a href="/admin/course/{{ course.id }}/materials" class="btn btn-success btn-sm">
+                        Управление материалами ({{ course.materials|length }})
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if course.materials %}
+                    <div class="list-group">
+                        {% for material in course.materials|sort(attribute='order') %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ material.title }}</strong>
+                                    <small class="text-muted d-block">
+                                        {{ material.type }} | Порядок: {{ material.order }}
+                                        {% if material.is_required %}| ⭐ Обязательный{% endif %}
+                                    </small>
+                                </div>
+                                <a href="/admin/material/{{ material.id }}/edit" class="btn btn-sm btn-outline-secondary">
+                                    ✏️
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Материалы еще не добавлены.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Примеры материалов -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">💡 Идеи для материалов</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Текст:</strong> Инструкции, стандарты, рецепты</li>
+                        <li><strong>PDF:</strong> Чек-листы, руководства, презентации</li>
+                        <li><strong>Видео:</strong> Обучающие ролики, демонстрации</li>
+                        <li><strong>Ссылки:</strong> Полезные ресурсы, статьи</li>
+                        <li><strong>Картинки:</strong> Инфографика, схемы процессов</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Вкладка 3: Тесты (только для существующего курса) -->
+        <div class="tab-pane fade" id="tests" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">🧪 Тесты и проверка знаний</h5>
+                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#addTestModal">
+                        ➕ Добавить вопрос
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if course.questions %}
+                    <div class="accordion" id="questionsAccordion">
+                        {% for question in course.questions %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ question.id }}">
+                                <button class="accordion-button collapsed" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#collapse{{ question.id }}">
+                                    Вопрос {{ loop.index }}: {{ question.question[:50] }}...
+                                    <span class="badge bg-success ms-2">{{ question.points }} баллов</span>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ question.id }}" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <p><strong>Текст вопроса:</strong> {{ question.question }}</p>
+                                    <p><strong>Варианты ответов:</strong></p>
+                                    <ol>
+                                        <li {% if question.correct_answer == 1 %}class="text-success fw-bold"{% endif %}>
+                                            {{ question.option1 }}
+                                            {% if question.correct_answer == 1 %} ✅ Правильный ответ{% endif %}
+                                        </li>
+                                        <li {% if question.correct_answer == 2 %}class="text-success fw-bold"{% endif %}>
+                                            {{ question.option2 }}
+                                            {% if question.correct_answer == 2 %} ✅ Правильный ответ{% endif %}
+                                        </li>
+                                        {% if question.option3 %}
+                                        <li {% if question.correct_answer == 3 %}class="text-success fw-bold"{% endif %}>
+                                            {{ question.option3 }}
+                                            {% if question.correct_answer == 3 %} ✅ Правильный ответ{% endif %}
+                                        </li>
+                                        {% endif %}
+                                        {% if question.option4 %}
+                                        <li {% if question.correct_answer == 4 %}class="text-success fw-bold"{% endif %}>
+                                            {{ question.option4 }}
+                                            {% if question.correct_answer == 4 %} ✅ Правильный ответ{% endif %}
+                                        </li>
+                                        {% endif %}
+                                    </ol>
+                                    <div class="d-flex justify-content-end">
+                                        <button class="btn btn-sm btn-outline-secondary me-2" disabled>✏️ Редактировать</button>
+                                        <button class="btn btn-sm btn-outline-danger" disabled>🗑️ Удалить</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">Вопросы теста еще не добавлены. Тест позволяет проверить усвоение материала.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Рекомендации по тестам -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">📝 Советы по созданию тестов</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0 small">
+                        <li>Добавляйте 3-10 вопросов на курс</li>
+                        <li>Используйте разные типы вопросов (выбор ответа, верно/неверно)</li>
+                        <li>Сделайте хотя бы 1 обязательный вопрос по безопасности</li>
+                        <li>Для прохождения теста установите порог 70-80% правильных ответов</li>
+                        <li>Добавляйте пояснения к правильным ответам</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Модальные окна и скрипты -->
+<div class="modal fade" id="addMaterialModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить учебный материал</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <p class="mb-0">Добавление материалов будет доступно в следующем обновлении.</p>
+                    <p class="mb-0">А пока вы можете:</p>
+                    <ul class="mb-0">
+                        <li>Добавить видео в поле "Ссылка на видео"</li>
+                        <li>Добавить описание материалов в поле "Описание курса"</li>
+                        <li>Создать тесты для проверки знаний</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addTestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Добавить вопрос теста</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <p class="mb-0">Добавление тестов будет доступно в следующем обновлении.</p>
+                    <p class="mb-0">А пока вы можете настроить тесты через базу данных.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

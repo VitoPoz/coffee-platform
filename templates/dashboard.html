@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2>📊 Панель обучения</h2>
+    <p class="text-muted">Вы вошли как: <strong>{{ session.user_name }}</strong> | Должность: <span class="badge bg-secondary">{{ session.position }}</span></p>
+    
+    <div class="row mt-4">
+        <!-- Левая колонка: Курсы -->
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Мои курсы</h4>
+                <a href="/courses" class="btn btn-sm btn-outline-primary">Все курсы →</a>
+            </div>
+            
+            {% if courses %}
+                <div class="row">
+                    {% for course in courses %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h5 class="card-title">{{ course.title }}</h5>
+                                    <span class="badge bg-info">{{ course.category }}</span>
+                                </div>
+                                <p class="card-text">{{ course.description[:100] }}...</p>
+                                
+                                <!-- Прогресс -->
+                                {% set course_progress = progress.get(course.id, 'not_started') %}
+                                <div class="mb-3">
+                                    {% if course_progress == 'completed' %}
+                                        <span class="badge bg-success">✅ Завершен</span>
+                                    {% elif course_progress == 'in_progress' %}
+                                        <span class="badge bg-warning">⏳ В процессе</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">🆕 Не начат</span>
+                                    {% endif %}
+                                    
+                                    <span class="badge bg-secondary ms-2">{{ course.required_position }}</span>
+                                </div>
+                                
+                                <!-- Блокировка курса -->
+                                {% if course_progress == 'not_started' and loop.index > 1 %}
+                                    <div class="alert alert-warning small py-2">
+                                        <small>🔒 Сначала завершите предыдущие курсы</small>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-secondary w-100" disabled>
+                                        Начать обучение
+                                    </button>
+                                {% else %}
+                                    <a href="/course/{{ course.id }}" class="btn btn-sm btn-primary w-100">
+                                        {% if course_progress == 'completed' %}
+                                            Повторить
+                                        {% elif course_progress == 'in_progress' %}
+                                            Продолжить
+                                        {% else %}
+                                            Начать обучение
+                                        {% endif %}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <h5>📚 Курсы пока не добавлены</h5>
+                    <p>Обратитесь к администратору для настройки обучения.</p>
+                    {% if session.is_admin %}
+                    <a href="/admin/courses" class="btn btn-primary">Настроить курсы</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Правая колонка: Статистика и действия -->
+        <div class="col-md-4">
+            <!-- Быстрые действия -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">⚡ Быстрые действия</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/courses" class="btn btn-outline-primary">📚 Все курсы</a>
+                        <a href="/library" class="btn btn-outline-info">📖 Библиотека стандартов</a>  <!-- ЭТУ СТРОЧКУ ДОБАВЛЯЕМ -->
+                        
+                        {% if session.is_admin %}
+                        <a href="/admin" class="btn btn-warning">👑 Админ-панель</a>
+                        <a href="/admin/course/new" class="btn btn-success">➕ Новый курс</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Статистика -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">📈 Ваш прогресс</h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3" style="height: 25px;">
+                        {% set total = courses|length %}
+                        {% set completed = progress.values()|select('equalto', 'completed')|list|length %}
+                        {% set percent = (completed / total * 100) if total > 0 else 0 %}
+                        
+                        <div class="progress-bar progress-bar-striped bg-success" 
+                             style="width: {{ percent }}%">
+                            {{ percent|int }}%
+                        </div>
+                    </div>
+                    
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h5>{{ completed }}</h5>
+                            <small class="text-muted">Завершено</small>
+                        </div>
+                        <div class="col-4">
+                            <h5>{{ progress.values()|select('equalto', 'in_progress')|list|length }}</h5>
+                            <small class="text-muted">В процессе</small>
+                        </div>
+                        <div class="col-4">
+                            <h5>{{ total }}</h5>
+                            <small class="text-muted">Всего курсов</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Информация о должности -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">👤 Ваша должность</h5>
+                </div>
+                <div class="card-body">
+                    <h4 class="text-center">{{ session.position }}</h4>
+                    <p class="text-muted small text-center">
+                        {% if session.position == 'Бариста-универсал' %}
+                        Вы имеете доступ к курсам по приготовлению кофе и обслуживанию
+                        {% elif session.position == 'Управляющий' %}
+                        Вам доступны курсы по управлению и администрированию
+                        {% elif session.position == 'Официант' %}
+                        Вам доступны курсы по сервису и обслуживанию гостей
+                        {% else %}
+                        Курсы подобраны специально для вашей должности
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрипт для подсветки курсов -->
+<script>
+// Подсветка текущего курса
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        const badge = card.querySelector('.badge.bg-warning');
+        if (badge && badge.textContent.includes('В процессе')) {
+            card.style.boxShadow = '0 0 0 2px #ffc107';
+        }
+    });
+});
+</script>
+{% endblock %}

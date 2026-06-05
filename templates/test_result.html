@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Навигация -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=test.course.id) }}">{{ test.course.title }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('view_test', course_id=test.course.id, test_id=test.id) }}">{{ test.title }}</a></li>
+            <li class="breadcrumb-item active">Результаты</li>
+        </ol>
+    </nav>
+
+    <!-- Результат теста -->
+    <div class="card mb-4">
+        <div class="card-header {% if test_result.passed %}bg-success{% else %}bg-danger{% endif %} text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">
+                        {% if test_result.passed %}
+                        ✅ Тест пройден успешно!
+                        {% else %}
+                        ❌ Тест не пройден
+                        {% endif %}
+                    </h3>
+                    <p class="mb-0">{{ test.title }}</p>
+                </div>
+                <div class="text-end">
+                    <h2 class="mb-0">{{ test_result.percentage }}%</h2>
+                    <p class="mb-0">Проходной балл: {{ test.passing_score }}%</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <!-- Статистика -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded">
+                        <h4 class="text-primary">{{ test_result.score }}/{{ test_result.total_score }}</h4>
+                        <p class="text-muted mb-0">Баллы</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded">
+                        <h4 class="{% if test_result.passed %}text-success{% else %}text-danger{% endif %}">
+                            {{ test_result.percentage }}%
+                        </h4>
+                        <p class="text-muted mb-0">Результат</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded">
+                        <h4 class="text-info">{{ test.passing_score }}%</h4>
+                        <p class="text-muted mb-0">Требуется</p>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 border rounded">
+                        <h4 class="text-secondary">{{ test_result.completed_at.strftime('%d.%m.%Y %H:%M') }}</h4>
+                        <p class="text-muted mb-0">Дата прохождения</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Детали по вопросам -->
+            <h5 class="mb-3">Детали по вопросам:</h5>
+            <div class="accordion" id="questionsAccordion">
+                {% for question in questions %}
+                {% set user_answer = answers|selectattr('question_id', 'equalto', question.id)|first %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" 
+                                type="button" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#question{{ question.id }}">
+                            <div class="d-flex align-items-center w-100">
+                                <div class="me-3">
+                                    {% if user_answer and user_answer.is_correct %}
+                                    <span class="badge bg-success">✓</span>
+                                    {% elif user_answer and not user_answer.is_correct %}
+                                    <span class="badge bg-danger">✗</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">?</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <strong>Вопрос {{ loop.index }}</strong>: {{ question.question_text[:50] }}...
+                                    {% if user_answer %}
+                                    <span class="text-muted ms-2">
+                                        (Ваш ответ: "{{ user_answer.answer[:30] }}{% if user_answer.answer|length > 30 %}...{% endif %}")
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="question{{ question.id }}" 
+                         class="accordion-collapse collapse {% if loop.first %}show{% endif %}" 
+                         data-bs-parent="#questionsAccordion">
+                        <div class="accordion-body">
+                            <p><strong>Вопрос:</strong> {{ question.question_text }}</p>
+                            
+                            {% if question.options %}
+                            <p><strong>Варианты:</strong></p>
+                            <ul>
+                                {% for option in question.options.split('|') %}
+                                <li>{{ option|trim }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            
+                            <p><strong>Правильный ответ:</strong> {{ question.correct_answer }}</p>
+                            
+                            {% if user_answer %}
+                            <p><strong>Ваш ответ:</strong> {{ user_answer.answer }}</p>
+                            <p class="{% if user_answer.is_correct %}text-success{% else %}text-danger{% endif %}">
+                                <strong>Результат:</strong>
+                                {% if user_answer.is_correct %}
+                                ✅ Верно (+{{ question.points }} баллов)
+                                {% else %}
+                                ❌ Неверно (0 баллов)
+                                {% endif %}
+                            </p>
+                            {% else %}
+                            <p class="text-warning"><strong>Вы не ответили на этот вопрос</strong></p>
+                            {% endif %}
+                            
+                            {% if question.explanation %}
+                            <div class="alert alert-light border mt-3">
+                                <strong>Объяснение:</strong> {{ question.explanation }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Кнопки действий -->
+            <div class="d-flex justify-content-between mt-4">
+                <div>
+                    <a href="{{ url_for('course_detail', course_id=test.course.id) }}" 
+                       class="btn btn-outline-secondary">
+                        ← Назад к курсу
+                    </a>
+                    <a href="{{ url_for('test_results', course_id=test.course.id, test_id=test.id) }}" 
+                       class="btn btn-outline-primary ms-2">
+                        📊 Подробная статистика
+                    </a>
+                </div>
+                
+                {% if not test_result.passed %}
+                <a href="{{ url_for('view_test', course_id=test.course.id, test_id=test.id) }}" 
+                   class="btn btn-warning">
+                    🔄 Пройти тест снова
+                </a>
+                {% else %}
+                <button class="btn btn-success" disabled>
+                    ✅ Тест пройден
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Рекомендации -->
+    {% if not test_result.passed %}
+    <div class="alert alert-warning">
+        <h5>Рекомендации:</h5>
+        <ul class="mb-0">
+            <li>Повторите материалы курса</li>
+            <li>Обратите внимание на вопросы с неправильными ответами</li>
+            <li>Вы можете пройти тест снова через 24 часа</li>
+        </ul>
+    </div>
+    {% else %}
+    <div class="alert alert-success">
+        <h5>Поздравляем! 🎉</h5>
+        <p class="mb-0">Вы успешно прошли тест. Можете продолжить изучение курса.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

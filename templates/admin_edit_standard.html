@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            {% if standard %}
+                ✏️ Редактирование стандарта
+            {% else %}
+                📖 Добавление стандарта
+            {% endif %}
+        </h2>
+        <a href="/admin/library" class="btn btn-secondary">← Назад</a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Название стандарта *</label>
+                    <input type="text" class="form-control" id="title" name="title" 
+                           value="{{ standard.title if standard else '' }}" required
+                           placeholder="Например: Стандарт приготовления эспрессо">
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="category" class="form-label">Категория *</label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">Выберите категорию</option>
+                                <option value="Кофе" {% if standard and standard.category == 'Кофе' %}selected{% endif %}>Кофе</option>
+                                <option value="Чай" {% if standard and standard.category == 'Чай' %}selected{% endif %}>Чай</option>
+                                <option value="Напитки" {% if standard and standard.category == 'Напитки' %}selected{% endif %}>Напитки</option>
+                                <option value="Выпечка" {% if standard and standard.category == 'Выпечка' %}selected{% endif %}>Выпечка</option>
+                                <option value="Сервис" {% if standard and standard.category == 'Сервис' %}selected{% endif %}>Сервис</option>
+                                <option value="Безопасность" {% if standard and standard.category == 'Безопасность' %}selected{% endif %}>Безопасность</option>
+                                <option value="Уборка" {% if standard and standard.category == 'Уборка' %}selected{% endif %}>Уборка</option>
+                                <option value="Оборудование" {% if standard and standard.category == 'Оборудование' %}selected{% endif %}>Оборудование</option>
+                                <option value="Документы" {% if standard and standard.category == 'Документы' %}selected{% endif %}>Документы</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="file_url" class="form-label">Ссылка на файл (если есть)</label>
+                            <input type="url" class="form-control" id="file_url" name="file_url"
+                                   value="{{ standard.file_url if standard else '' }}"
+                                   placeholder="https://drive.google.com/... или прямой URL">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="content" class="form-label">Содержание *</label>
+                    <textarea class="form-control" id="content" name="content" 
+                              rows="10" required
+                              placeholder="Подробное описание стандарта...">{{ standard.content if standard else '' }}</textarea>
+                    <small class="text-muted">Можно использовать HTML-разметку для форматирования</small>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        {% if standard %}
+                            Обновить стандарт
+                        {% else %}
+                            Добавить стандарт
+                        {% endif %}
+                    </button>
+                    <a href="/admin/library" class="btn btn-secondary">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">💡 Советы по добавлению стандартов</h5>
+        </div>
+        <div class="card-body">
+            <ul>
+                <li><strong>Будьте конкретны</strong> — описывайте точные параметры (граммы, градусы, секунды)</li>
+                <li><strong>Добавляйте примеры</strong> — фотографии правильного и неправильного выполнения</li>
+                <li><strong>Используйте списки</strong> — пошаговые инструкции легче воспринимать</li>
+                <li><strong>Указывайте ответственных</strong> — кто проверяет выполнение стандарта</li>
+                <li><strong>Обновляйте регулярно</strong> — стандарты должны быть актуальными</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

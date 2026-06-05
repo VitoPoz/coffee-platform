@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Навигация -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('course_detail', course_id=course.id) }}">{{ course.title }}</a></li>
+            <li class="breadcrumb-item active">{{ test.title }}</li>
+        </ol>
+    </nav>
+
+    <!-- Информация о тесте -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">{{ test.title }}</h3>
+                    {% if test.description %}
+                    <p class="mb-0 text-light">{{ test.description }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if test.time_limit %}
+                    <span class="badge bg-warning text-dark">Лимит времени: {{ test.time_limit }} мин</span>
+                    {% endif %}
+                    <span class="badge bg-light text-dark">Вопросов: {{ questions|length }}</span>
+                    <span class="badge bg-light text-dark">Проходной балл: {{ test.passing_score }}%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <!-- Форма теста -->
+            <form id="testForm" action="{{ url_for('submit_test', course_id=course.id, test_id=test.id) }}" method="POST">
+                {% for question in questions %}
+                <div class="question-card mb-4 p-3 border rounded">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="mb-0">Вопрос {{ loop.index }}</h5>
+                        <span class="badge bg-secondary">{{ question.points }} баллов</span>
+                    </div>
+                    
+                    <p class="mb-3">{{ question.question_text }}</p>
+                    
+                    <!-- Варианты ответов -->
+                    <div class="ms-3">
+                        {% if question.question_type == 'single_choice' %}
+                            <!-- Один правильный ответ -->
+                            {% if question.options %}
+                                {% set options = question.options.split('|') %}
+                                {% for option in options %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" 
+                                           name="question_{{ question.id }}" 
+                                           id="q{{ question.id }}_opt{{ loop.index }}" 
+                                           value="{{ option|trim }}">
+                                    <label class="form-check-label" for="q{{ question.id }}_opt{{ loop.index }}">
+                                        {{ option|trim }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                            
+                        {% elif question.question_type == 'multiple_choice' %}
+                            <!-- Несколько правильных ответов -->
+                            {% if question.options %}
+                                {% set options = question.options.split('|') %}
+                                {% for option in options %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="question_{{ question.id }}" 
+                                           id="q{{ question.id }}_opt{{ loop.index }}" 
+                                           value="{{ option|trim }}">
+                                    <label class="form-check-label" for="q{{ question.id }}_opt{{ loop.index }}">
+                                        {{ option|trim }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                            
+                        {% elif question.question_type == 'text' %}
+                            <!-- Текстовый ответ -->
+                            <div class="mb-3">
+                                <textarea class="form-control" 
+                                          name="question_{{ question.id }}" 
+                                          rows="3" 
+                                          placeholder="Введите ваш ответ..."></textarea>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    {% if question.explanation %}
+                    <div class="alert alert-light border mt-2 mb-0">
+                        <small class="text-muted">
+                            <strong>Пояснение:</strong> {{ question.explanation }}
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                
+                <!-- Кнопки -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('course_detail', course_id=course.id) }}" 
+                       class="btn btn-outline-secondary">
+                        ← Назад к курсу
+                    </a>
+                    <button type="submit" class="btn btn-primary" id="submitTestBtn">
+                        Отправить ответы
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Таймер (если есть лимит времени) -->
+    {% if test.time_limit %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">⏰ Осталось времени</h5>
+        </div>
+        <div class="card-body text-center">
+            <h2 id="timer" class="text-danger">{{ test.time_limit }}:00</h2>
+            <p class="text-muted mb-0">Тест автоматически отправится по истечении времени</p>
+        </div>
+    </div>
+
+    <script>
+    // Таймер
+    let timeLimit = {{ test.time_limit * 60 }}; // в секундах
+    const timerElement = document.getElementById('timer');
+    
+    function updateTimer() {
+        const minutes = Math.floor(timeLimit / 60);
+        const seconds = timeLimit % 60;
+        timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeLimit <= 0) {
+            // Автоматическая отправка формы
+            document.getElementById('testForm').submit();
+        } else {
+            timeLimit--;
+            setTimeout(updateTimer, 1000);
+        }
+    }
+    
+    // Запускаем таймер
+    updateTimer();
+    </script>
+    {% endif %}
+</div>
+
+<script>
+// Предотвращение случайного закрытия страницы
+window.addEventListener('beforeunload', function (e) {
+    const submitBtn = document.getElementById('submitTestBtn');
+    if (submitBtn && submitBtn.type !== 'submit') {
+        e.preventDefault();
+        e.returnValue = 'Вы не завершили тест. Вы уверены, что хотите покинуть страницу?';
+    }
+});
+
+// Отображение количества выбранных ответов
+document.getElementById('testForm').addEventListener('change', function() {
+    const totalQuestions = {{ questions|length }};
+    const answered = document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked, textarea').length;
+    // Можно добавить отображение прогресса если нужно
+});
+</script>
+{% endblock %}

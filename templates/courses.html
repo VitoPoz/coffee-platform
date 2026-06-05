@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>📚 Все курсы</h2>
+<p class="text-muted">Доступно курсов: {{ courses|length }}</p>
+
+<div class="row">
+    {% for course in courses %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">{{ course.title }}</h5>
+                <h6 class="card-subtitle mb-2 text-muted">Курс #{{ course.id }}</h6>
+                <p class="card-text">{{ course.description }}</p>
+                
+                <div class="mb-3">
+                    <span class="badge bg-info me-2">
+                        {{ course.materials|length }} материалов
+                    </span>
+                    <span class="badge bg-warning">
+                        {{ course.test_questions|length }} тестов
+                    </span>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Содержание:</h6>
+                    <ul class="small">
+                        {% for material in course.materials[:3] %}
+                        <li>{{ material }}</li>
+                        {% endfor %}
+                        {% if course.materials|length > 3 %}
+                        <li>... и еще {{ course.materials|length - 3 }}</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="/course/{{ course.id }}" class="btn btn-primary btn-sm">
+                    Начать обучение
+                </a>
+                {% if session.is_admin %}
+                <button class="btn btn-outline-secondary btn-sm ms-2" disabled>Редактировать</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

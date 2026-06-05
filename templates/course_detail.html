@@ -1,0 +1,717 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Хлебные крошки -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/dashboard">Панель</a></li>
+            <li class="breadcrumb-item"><a href="/courses">Курсы</a></li>
+            <li class="breadcrumb-item active">{{ course.title }}</li>
+        </ol>
+    </nav>
+    
+    <!-- Заголовок курса -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1>{{ course.title }}</h1>
+            <p class="lead text-muted">{{ course.description }}</p>
+            
+            <!-- Бейджики -->
+            <div class="mb-3">
+                <span class="badge bg-info me-2">{{ course.category }}</span>
+                <span class="badge bg-secondary me-2">{{ course.required_position }}</span>
+                <span class="badge bg-success">ID: {{ course.id }}</span>
+            </div>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group">
+                <a href="/courses" class="btn btn-outline-secondary">← Все курсы</a>
+                {% if session.is_admin %}
+                <a href="/admin/course/{{ course.id }}/structure" class="btn btn-outline-primary">
+                    <i class="fas fa-sitemap"></i> Управление структурой
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Левая колонка: Контент -->
+        <div class="col-lg-8">
+            <!-- Видео (если есть) -->
+            {% if course.video_url %}
+            <div class="card mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">🎥 Видеоурок</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="ratio ratio-16x9">
+                        <iframe src="{{ course.video_url }}" 
+                                title="Видеоурок по курсу {{ course.title }}"
+                                frameborder="0" 
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                allowfullscreen></iframe>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    Рекомендуем посмотреть видео полностью перед изучением материалов
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Материалы курса -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📚 Учебные материалы</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="expandAll()">
+                            <i class="fas fa-expand"></i> Развернуть все
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="collapseAll()">
+                            <i class="fas fa-compress"></i> Свернуть все
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% set has_materials = structure|length > 0 %}
+                    
+                    {% if has_materials %}
+                    <div class="course-structure">
+                        {% for item in structure %}
+                            {% with item=item, level=0 %}
+                                {% include 'partials/course_item.html' %}
+                            {% endwith %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">
+                            <i class="fas fa-info-circle"></i> 
+                            Материалы курса пока не добавлены. 
+                            {% if session.is_admin %}
+                            <a href="/admin/course/{{ course.id }}/structure" class="alert-link">Добавить материалы</a>
+                            {% else %}
+                            Обратитесь к администратору.
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Чекбокс завершения материалов -->
+                    {% if has_materials %}
+                    <div class="form-check mt-3">
+                        <input class="form-check-input" type="checkbox" id="materialsCompleted">
+                        <label class="form-check-label" for="materialsCompleted">
+                            <strong>Я изучил все материалы</strong>
+                        </label>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Тесты (если есть) -->
+            {% if questions %}
+            <div class="card" id="testSection">
+                <div class="card-header bg-warning text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">🧪 Проверка знаний</h5>
+                        <span class="badge bg-dark">{{ questions|length }} вопросов</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Пройдите тест для завершения курса. Минимальный порог: <strong>70% правильных ответов</strong>.
+                    </p>
+                    
+                    <form id="testForm">
+                        {% for question in questions %}
+                        <div class="question-card mb-4 p-3 border rounded" id="question-{{ question.id }}">
+                            <div class="question-header mb-3">
+                                <h6 class="mb-0">
+                                    Вопрос {{ loop.index }} 
+                                    <span class="badge bg-secondary">{{ question.points }} баллов</span>
+                                </h6>
+                                <p class="fw-bold mt-2 mb-3">{{ question.question_text }}</p>
+                            </div>
+                            
+                            <div class="options">
+                                {% set options = question.options.split('|') if question.options else [] %}
+                                {% for i in range(1, 5) %}
+                                    {% if options|length >= i %}
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" 
+                                               name="question{{ question.id }}" 
+                                               id="q{{ question.id }}_{{ i }}" value="{{ i }}" required>
+                                        <label class="form-check-label" for="q{{ question.id }}_{{ i }}">
+                                            {{ i }}. {{ options[i-1] }}
+                                        </label>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <button type="button" class="btn btn-outline-secondary" onclick="saveTestProgress()">
+                                <i class="fas fa-save"></i> Сохранить прогресс
+                            </button>
+                            <button type="button" class="btn btn-warning btn-lg" onclick="submitTest()">
+                                <i class="fas fa-paper-plane"></i> Отправить на проверку
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Результат теста (скрыт изначально) -->
+                    <div id="testResult" class="mt-4" style="display: none;">
+                        <!-- Сюда будет вставлен результат -->
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Если тестов нет -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="display-4 text-muted mb-3">📝</div>
+                    <h4>Тест пока не добавлен</h4>
+                    <p class="text-muted">Для этого курса еще не созданы вопросы теста.</p>
+                    {% if session.is_admin %}
+                    <a href="/admin/course/{{ course.id }}/structure" class="btn btn-outline-primary">
+                        <i class="fas fa-plus"></i> Добавить тест
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Правая колонка: Информация -->
+        <div class="col-lg-4">
+            <!-- Статус курса -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Статус прохождения</h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" style="width: 0%" 
+                             id="courseProgressBar">0%</div>
+                    </div>
+                    
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-book text-primary"></i>
+                            <span class="ms-2">Материалы: <span id="materialsCount">0</span>/<span id="totalMaterials">0</span></span>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-check-circle text-success"></i>
+                            <span class="ms-2">Тест: <span id="testStatus">Не начат</span></span>
+                        </li>
+                        <li>
+                            <i class="fas fa-certificate text-warning"></i>
+                            <span class="ms-2">Курс: <span id="courseStatus">В процессе</span></span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Информация о курсе -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">ℹ️ Информация</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Категория:</dt>
+                        <dd class="col-sm-7">{{ course.category }}</dd>
+                        
+                        <dt class="col-sm-5">Для кого:</dt>
+                        <dd class="col-sm-7">{{ course.required_position }}</dd>
+                        
+                        <dt class="col-sm-5">Разделов:</dt>
+                        <dd class="col-sm-7">
+                            {% set folder_count = 0 %}
+                            {% for item in structure %}
+                                {% if item.type == 'folder' %}
+                                    {% set folder_count = folder_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ folder_count }}
+                        </dd>
+                        
+                        <dt class="col-sm-5">Уроков:</dt>
+                        <dd class="col-sm-7">
+                            {% set lesson_count = 0 %}
+                            {% for item in structure %}
+                                {% if item.type == 'lesson' %}
+                                    {% set lesson_count = lesson_count + 1 %}
+                                {% endif %}
+                                {% for child in item.children %}
+                                    {% if child.type == 'lesson' %}
+                                        {% set lesson_count = lesson_count + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                            {{ lesson_count }}
+                        </dd>
+                        
+                        <dt class="col-sm-5">Вопросов:</dt>
+                        <dd class="col-sm-7">{{ questions|length }}</dd>
+                        
+                        <dt class="col-sm-5">Создан:</dt>
+                        <dd class="col-sm-7">{{ course.created_at.strftime('%d.%m.%Y') if course.created_at else 'Не указано' }}</dd>
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- Быстрые действия -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">⚡ Быстрые действия</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="markAsStarted()">
+                            <i class="fas fa-play"></i> Начать курс
+                        </button>
+                        <button class="btn btn-outline-success" onclick="markAsCompleted()" disabled id="completeBtn">
+                            <i class="fas fa-check-circle"></i> Завершить курс
+                        </button>
+                        <a href="/courses" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Вернуться к курсам
+                        </a>
+                        {% if session.is_admin %}
+                        <a href="/admin/course/{{ course.id }}/structure" class="btn btn-outline-warning">
+                            <i class="fas fa-sitemap"></i> Управление структурой
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Советы по обучению -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h6><i class="fas fa-lightbulb"></i> Советы:</h6>
+                    <ul class="small mb-0">
+                        <li>Изучайте материалы последовательно</li>
+                        <li>Делайте заметки</li>
+                        <li>Проходите тест после изучения</li>
+                        <li>Повторяйте сложные темы</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== НОВЫЙ БЛОК СКРИПТОВ ДЛЯ СВОРАЧИВАНИЯ ========== -->
+<script>
+// Функция для сворачивания/разворачивания разделов
+function toggleFolder(header) {
+    const content = header.nextElementSibling;
+    const icon = header.querySelector('.toggle-icon');
+    
+    if (!content) return;
+    
+    if (content.style.display === 'none' || !content.style.display) {
+        content.style.display = 'block';
+        if (icon) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+        }
+    } else {
+        content.style.display = 'none';
+        if (icon) {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+        }
+    }
+}
+
+// Функции для массового сворачивания/разворачивания
+function expandAll() {
+    document.querySelectorAll('.folder-content').forEach(el => {
+        el.style.display = 'block';
+        const header = el.previousElementSibling;
+        if (header) {
+            const icon = header.querySelector('.toggle-icon');
+            if (icon) {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+    });
+}
+
+function collapseAll() {
+    document.querySelectorAll('.folder-content').forEach(el => {
+        el.style.display = 'none';
+        const header = el.previousElementSibling;
+        if (header) {
+            const icon = header.querySelector('.toggle-icon');
+            if (icon) {
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        }
+    });
+}
+</script>
+<!-- ========== КОНЕЦ НОВОГО БЛОКА ========== -->
+
+<!-- JavaScript для работы с тестом -->
+<script>
+// Глобальные переменные
+let testAnswers = {};
+let materialsCompleted = 0;
+
+// Подсчет общего количества уроков
+const totalMaterials = {{ lesson_count }};
+const totalQuestions = {{ questions|length }};
+const passingScore = 70; // Процент для прохождения
+
+// Обновляем счетчик в правой колонке
+document.getElementById('totalMaterials').textContent = totalMaterials;
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    // Восстанавливаем прогресс из localStorage
+    restoreProgress();
+    
+    // Обновляем счетчик материалов
+    updateMaterialsCount();
+    
+    // Навешиваем обработчики на чекбоксы материалов
+    const materialsCheckbox = document.getElementById('materialsCompleted');
+    if (materialsCheckbox) {
+        materialsCheckbox.addEventListener('change', function() {
+            materialsCompleted = this.checked ? totalMaterials : 0;
+            updateProgressBar();
+            saveTestProgress();
+        });
+    }
+    
+    // Навешиваем обработчики на радиокнопки теста
+    {% for question in questions %}
+    document.querySelectorAll('input[name="question{{ question.id }}"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            testAnswers[{{ question.id }}] = parseInt(this.value);
+            saveTestProgress();
+        });
+    });
+    {% endfor %}
+});
+
+// Сохранить прогресс теста
+function saveTestProgress() {
+    localStorage.setItem('test_progress_{{ course.id }}', JSON.stringify(testAnswers));
+    localStorage.setItem('materials_progress_{{ course.id }}', materialsCompleted);
+    showNotification('Прогресс сохранен', 'success');
+}
+
+// Восстановить прогресс из localStorage
+function restoreProgress() {
+    // Восстанавливаем тест
+    const savedTest = localStorage.getItem('test_progress_{{ course.id }}');
+    if (savedTest) {
+        testAnswers = JSON.parse(savedTest);
+        // Заполняем радиокнопки
+        for (const [questionId, answer] of Object.entries(testAnswers)) {
+            const radio = document.querySelector(`input[name="question${questionId}"][value="${answer}"]`);
+            if (radio) radio.checked = true;
+        }
+    }
+    
+    // Восстанавливаем материалы
+    const savedMaterials = localStorage.getItem('materials_progress_{{ course.id }}');
+    if (savedMaterials) {
+        materialsCompleted = parseInt(savedMaterials);
+        if (materialsCompleted === totalMaterials && totalMaterials > 0) {
+            const checkbox = document.getElementById('materialsCompleted');
+            if (checkbox) checkbox.checked = true;
+        }
+    }
+    
+    updateProgressBar();
+}
+
+// Обновить прогресс-бар
+function updateProgressBar() {
+    let progress = 0;
+    let completedSteps = 0;
+    let totalSteps = 0;
+    
+    // Материалы (50% от прогресса)
+    if (totalMaterials > 0) {
+        totalSteps += 50;
+        completedSteps += (materialsCompleted / totalMaterials) * 50;
+    }
+    
+    // Тест (50% от прогресса)
+    if (totalQuestions > 0) {
+        totalSteps += 50;
+        const answeredQuestions = Object.keys(testAnswers).length;
+        completedSteps += (answeredQuestions / totalQuestions) * 50;
+    }
+    
+    // Если нет материалов и тестов
+    if (totalSteps === 0) {
+        progress = 0;
+    } else {
+        progress = Math.round((completedSteps / totalSteps) * 100);
+    }
+    
+    // Обновляем прогресс-бар
+    const progressBar = document.getElementById('courseProgressBar');
+    progressBar.style.width = progress + '%';
+    progressBar.textContent = progress + '%';
+    
+    // Обновляем статус
+    document.getElementById('materialsCount').textContent = materialsCompleted;
+    document.getElementById('testStatus').textContent = 
+        Object.keys(testAnswers).length + '/' + totalQuestions + ' ответов';
+    
+    // Если прогресс 100%, активируем кнопку завершения
+    if (progress === 100) {
+        document.getElementById('completeBtn').disabled = false;
+        document.getElementById('courseStatus').textContent = 'Готово к завершению';
+    }
+}
+
+// Обновить счетчик материалов
+function updateMaterialsCount() {
+    document.getElementById('materialsCount').textContent = materialsCompleted;
+}
+
+// Отправить тест на проверку
+function submitTest() {
+    // Проверяем, что на все вопросы ответили
+    const unansweredQuestions = [];
+    {% for question in questions %}
+    if (!testAnswers[{{ question.id }}]) {
+        unansweredQuestions.push({{ loop.index }});
+    }
+    {% endfor %}
+    
+    if (unansweredQuestions.length > 0) {
+        showNotification(`Ответьте на вопросы: ${unansweredQuestions.join(', ')}`, 'warning');
+        return;
+    }
+    
+    // Проверяем, что материалы изучены
+    if (materialsCompleted < totalMaterials && totalMaterials > 0) {
+        showNotification('Сначала изучите все материалы!', 'warning');
+        return;
+    }
+    
+    // Проверяем ответы
+    let score = 0;
+    let maxScore = 0;
+    
+    {% for question in questions %}
+    maxScore += {{ question.points }};
+    // Правильный ответ хранится в question.correct_answer как строка с номером (например, "1", "2")
+    if (testAnswers[{{ question.id }}] === parseInt('{{ question.correct_answer }}')) {
+        score += {{ question.points }};
+    }
+    {% endfor %}
+    
+    const percentage = Math.round((score / maxScore) * 100);
+    const isPassed = percentage >= passingScore;
+    
+    // Показываем результат
+    const resultHTML = `
+        <div class="card ${isPassed ? 'border-success' : 'border-danger'}">
+            <div class="card-header ${isPassed ? 'bg-success text-white' : 'bg-danger text-white'}">
+                <h5 class="mb-0">
+                    ${isPassed ? '✅ Тест пройден!' : '❌ Тест не пройден'}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div class="display-4 ${isPassed ? 'text-success' : 'text-danger'}">
+                        ${percentage}%
+                    </div>
+                    <p class="lead">
+                        Вы набрали <strong>${score}/${maxScore}</strong> баллов
+                    </p>
+                    <p class="${isPassed ? 'text-success' : 'text-danger'}">
+                        ${isPassed ? 
+                          'Поздравляем! Минимальный порог (70%) достигнут.' : 
+                          `Необходимо набрать ${passingScore}%. Попробуйте еще раз.`}
+                    </p>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    ${isPassed ? 
+                      `<button class="btn btn-success btn-lg" onclick="completeCourse()">
+                           <i class="fas fa-trophy"></i> Завершить курс
+                       </button>` : 
+                      `<button class="btn btn-warning" onclick="retryTest()">
+                           <i class="fas fa-redo"></i> Попробовать снова
+                       </button>`}
+                    <button class="btn btn-outline-secondary" onclick="reviewAnswers()">
+                        <i class="fas fa-search"></i> Посмотреть ответы
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('testResult').innerHTML = resultHTML;
+    document.getElementById('testResult').style.display = 'block';
+    document.getElementById('testForm').style.display = 'none';
+    
+    // Сохраняем результат теста
+    localStorage.setItem('test_result_{{ course.id }}', JSON.stringify({
+        score: score,
+        maxScore: maxScore,
+        percentage: percentage,
+        passed: isPassed,
+        date: new Date().toISOString()
+    }));
+    
+    // Обновляем прогресс
+    updateProgressBar();
+}
+
+// Перепройти тест
+function retryTest() {
+    // Сбрасываем ответы
+    testAnswers = {};
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.checked = false;
+    });
+    
+    // Показываем форму теста
+    document.getElementById('testResult').style.display = 'none';
+    document.getElementById('testForm').style.display = 'block';
+    
+    showNotification('Тест сброшен. Попробуйте еще раз!', 'info');
+}
+
+// Просмотреть правильные ответы
+function reviewAnswers() {
+    let reviewHTML = '<h5>📋 Правильные ответы:</h5>';
+    
+    {% for question in questions %}
+    // Получаем текст правильного ответа
+    const options{{ question.id }} = '{{ question.options }}'.split('|');
+    const correctAnswerIndex{{ question.id }} = parseInt('{{ question.correct_answer }}') - 1;
+    const correctAnswerText{{ question.id }} = options{{ question.id }}[correctAnswerIndex{{ question.id }}] || 'Не указан';
+    
+    reviewHTML += `
+        <div class="card mb-2">
+            <div class="card-body p-3">
+                <p class="fw-bold">Вопрос {{ loop.index }}: {{ question.question_text }}</p>
+                <p class="mb-1">
+                    <span class="badge bg-success">Правильный ответ: ${correctAnswerText{{ question.id }}}</span>
+                </p>
+                <p class="text-muted small mb-0">
+                    Ваш ответ: ${testAnswers[{{ question.id }}] ? (options{{ question.id }}[testAnswers[{{ question.id }}] - 1] || testAnswers[{{ question.id }}]) : 'Нет ответа'} 
+                    ${testAnswers[{{ question.id }}] === parseInt('{{ question.correct_answer }}') ? 
+                      '✅ Правильно' : '❌ Неправильно'}
+                </p>
+            </div>
+        </div>
+    `;
+    {% endfor %}
+    
+    document.getElementById('testResult').innerHTML = reviewHTML;
+}
+
+// Завершить курс
+function completeCourse() {
+    if (confirm('Завершить курс "' + "{{ course.title }}" + '"? Это действие нельзя отменить.')) {
+        showNotification('Курс завершен!', 'success');
+        
+        // Отправляем данные на сервер (в будущем)
+        fetch('/api/complete_course/{{ course.id }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                score: JSON.parse(localStorage.getItem('test_result_{{ course.id }}')).score,
+                maxScore: JSON.parse(localStorage.getItem('test_result_{{ course.id }}')).maxScore
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Курс успешно завершен!', 'success');
+                document.getElementById('courseStatus').textContent = 'Завершен';
+                document.getElementById('completeBtn').disabled = true;
+                document.getElementById('completeBtn').innerHTML = '<i class="fas fa-check-circle"></i> Курс завершен';
+                
+                // Очищаем локальное хранилище
+                localStorage.removeItem('test_progress_{{ course.id }}');
+                localStorage.removeItem('materials_progress_{{ course.id }}');
+                localStorage.removeItem('test_result_{{ course.id }}');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Ошибка при завершении курса', 'danger');
+        });
+    }
+}
+
+// Отметить курс как начатый
+function markAsStarted() {
+    showNotification('Курс начат! Приятного обучения!', 'info');
+    document.getElementById('courseStatus').textContent = 'В процессе';
+}
+
+// Отметить курс как завершенный (вручную)
+function markAsCompleted() {
+    completeCourse();
+}
+
+// Показать уведомление
+function showNotification(message, type = 'info') {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.style.minWidth = '300px';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.remove();
+    }, 3000);
+}
+
+// Инициализация прогресса
+updateProgressBar();
+</script>
+
+<!-- Bootstrap JS (для работы модальных окон и других компонентов) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- FontAwesome для иконок -->
+<script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+<script>
+// Функция для проверки статуса уроков
+function checkLessonStatus() {
+    // Здесь будем получать информацию о том, какие уроки изучены
+    // Пока просто заглушка
+}
+
+// Обновляем статусы при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    checkLessonStatus();
+});
+</script>
+{% endblock %}

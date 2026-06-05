@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1,
+        "name": "Администратор",
+        "email": "admin@coffee.ru",
+        "password": "admin123",
+        "is_admin": true
+    },
+    {
+        "id": 2,
+        "name": "Бариста Иван",
+        "email": "barista@coffee.ru",
+        "password": "123456",
+        "is_admin": false
+    }
+]
